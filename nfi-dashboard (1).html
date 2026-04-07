@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>U.S. Net Farm Income — Live Proxy Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #06090F; --card: #0D1117; --card-alt: #111820;
+  --border: #1B2332; --border-hi: #2A3548;
+  --accent: #00E59B; --accent-dim: #003D29; --accent-glow: #00E59B22;
+  --warn: #FFB020; --warn-dim: #3D2B00;
+  --danger: #FF4D6A; --danger-dim: #3D0011;
+  --blue: #4D9EFF; --blue-dim: #0A2240;
+  --purple: #A78BFA;
+  --text: #E8EDF5; --text-dim: #8B95A8; --text-muted: #4A5568;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; padding: 20px 16px; }
+.wrap { max-width: 1200px; margin: 0 auto; }
+.mono { font-family: 'IBM Plex Mono', monospace; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; transition: border-color 0.2s; }
+.card:hover { border-color: var(--border-hi); }
+.lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; font-family: 'IBM Plex Mono', monospace; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.pill { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+.btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); font-size: 11px; font-weight: 600; cursor: pointer; font-family: 'IBM Plex Mono', monospace; transition: all 0.2s; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+.stat-card { flex: 1 1 160px; min-width: 160px; }
+.stat-card .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.stat-card .stat-val { font-size: 26px; font-weight: 700; margin-top: 4px; }
+.stat-card .stat-sub { font-size: 12px; margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
+.commodity-card { flex: 1 1 150px; min-width: 150px; }
+.nav-row { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab-content { animation: fadeUp 0.4s ease forwards; }
+.bridge-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #1B233211; }
+.bridge-bar-bg { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.bridge-bar { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes glow { 0%,100% { box-shadow: 0 0 8px var(--accent-glow); } 50% { box-shadow: 0 0 20px var(--accent-glow); } }
+.glow { animation: glow 3s ease infinite; }
+.pulse-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+.chart-container { position: relative; width: 100%; }
+.chart-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.chart-tabs .btn { padding: 4px 12px; font-size: 10px; }
+footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+footer span { font-size: 9px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; }
+.hidden { display: none !important; }
+.hero-card { border: 1px solid #FFB02033; }
+.summary-line { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.summary-line:last-child { border-bottom: none; padding-top: 8px; }
+a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- HEADER -->
+  <div style="margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span class="mono" style="color:var(--accent);font-size:12px;font-weight:700;letter-spacing:2px">NFI//PROXY</span>
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)"></div>
+      <span class="mono" style="font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:6px">
+        <span class="pulse-dot" id="statusDot" style="background:var(--accent)"></span>
+        <span id="statusText">READY</span>
+      </span>
+    </div>
+    <h1 style="font-size:26px;font-weight:700;margin:4px 0;letter-spacing:-0.5px">U.S. Net Farm Income — Live Proxy</h1>
+    <p class="mono" style="font-size:11px;color:var(--text-dim)">Real-time directional estimate vs. USDA Feb 2026 baseline ($153.4B)</p>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav-row">
+    <button class="btn active" onclick="showTab('dashboard')" id="tabDash">Dashboard</button>
+    <button class="btn" onclick="showTab('methodology')" id="tabMethod">Methodology</button>
+    <div style="flex:1"></div>
+    <button class="btn" onclick="fetchLivePrices()" id="refreshBtn" style="border-color:var(--accent);color:var(--accent)">⟳ Refresh Prices</button>
+  </div>
+
+  <!-- ═══ DASHBOARD TAB ═══ -->
+  <div id="dashboardTab" class="tab-content">
+
+    <!-- HERO -->
+    <div class="card glow hero-card" id="heroCard">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
+        <div>
+          <div class="lbl">Proxy Net Farm Income 2026</div>
+          <div id="heroNFI" style="font-size:40px;font-weight:700;margin-top:4px">—</div>
+          <div id="heroDelta" class="mono" style="font-size:13px;margin-top:4px;color:var(--warn)">Loading...</div>
+        </div>
+        <div style="text-align:right">
+          <span class="pill" id="heroSignal" style="background:var(--warn-dim);color:var(--warn)">● LOADING</span>
+          <div class="mono" style="font-size:10px;color:var(--text-muted);margin-top:8px" id="heroAsOf">—</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap;align-items:flex-start">
+        <div id="summaryTable" style="flex:1;min-width:240px"></div>
+      </div>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="row" id="kpiRow"></div>
+
+    <!-- NFI COMPONENTS CHART -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <div>
+          <div style="font-size:14px;font-weight:700">Net Farm Income Components</div>
+          <div class="mono" style="font-size:11px;color:var(--text-muted)">2000–2026F · Revenue layers vs. production expenses · $ Billions</div>
+        </div>
+        <div class="chart-tabs">
+          <button class="btn active" onclick="setComponentMode('stacked')" id="btnStacked">Stacked</button>
+          <button class="btn" onclick="setComponentMode('grouped')" id="btnGrouped">Side-by-Side</button>
+        </div>
+      </div>
+      <div class="chart-container" style="height:340px"><canvas id="nfiComponentsChart"></canvas></div>
+      <div class="mono" style="font-size:10px;color:var(--text-muted);margin-top:10px;line-height:1.6">
+        The green NFI line = total revenue minus expenses. 2022's record $210B was driven by crop receipts ($278B);
+        2025–26 is increasingly about government payments ($30–44B) and cattle strength offsetting declining crop margins.
+      </div>
+    </div>
+
+    <!-- COMMODITY PRICE HISTORY -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <div>
+          <div style="font-size:14px;font-weight:700">Commodity Price History</div>
+          <div class="mono" style="font-size:11px;color:var(--text-muted)">2014–2026* · Annual averages · *2026 = current futures</div>
+        </div>
+        <div class="chart-tabs">
+          <button class="btn active" onclick="setPriceGroup('grain')" id="btnGrain">Grains</button>
+          <button class="btn" onclick="setPriceGroup('livestock')" id="btnLivestock">Livestock</button>
+          <button class="btn" onclick="setPriceGroup('input')" id="btnInput">Inputs</button>
+        </div>
+      </div>
+      <div class="chart-container" style="height:280px"><canvas id="priceHistoryChart"></canvas></div>
+    </div>
+
+    <!-- LIVE COMMODITY PRICES -->
+    <div class="lbl" style="margin-bottom:8px;padding-left:4px">Live Commodity Prices — Receipt Impact</div>
+    <div class="row" id="commodityCards"></div>
+
+    <!-- EXPENSE DRIVERS -->
+    <div class="lbl" style="margin-bottom:8px;padding-left:4px">Expense Pressure Indicators</div>
+    <div class="row" id="expenseCards"></div>
+
+    <!-- NFI BRIDGE -->
+    <div id="bridgeSection"></div>
+
+    <!-- MARKET CONTEXT -->
+    <div class="card hidden" id="contextCard" style="background:linear-gradient(90deg,var(--blue-dim),var(--card));border-color:#4D9EFF33">
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:16px">📡</span>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:4px">Market Context</div>
+          <div class="mono" style="font-size:11px;color:var(--text-dim);line-height:1.6" id="contextText"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DISCLAIMER -->
+    <div class="card" style="background:var(--bg)">
+      <div class="mono" style="font-size:9px;color:var(--text-muted);line-height:1.6">
+        <strong style="color:var(--text-dim)">DISCLAIMER:</strong> This is an approximate directional proxy, not a precise forecast.
+        Assumptions: production volumes held constant at USDA 2026F levels; price changes flow proportionally to receipts/expenses;
+        government payments and "other income" held at USDA baseline; feed costs correlate 60% with corn; fuel costs scale linearly with crude;
+        fertilizer costs scale with urea; livestock purchase costs track 80% with cattle. Actual NFI depends on weather, yields, trade policy,
+        acreage shifts, and many other factors not captured here. Source baseline: USDA ERS Feb 5, 2026 release.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ METHODOLOGY TAB ═══ -->
+  <div id="methodologyTab" class="tab-content hidden">
+    <div class="card">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:12px">How the Proxy NFI is Calculated</h2>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.8">
+        <p style="margin-bottom:16px">The proxy starts with the USDA ERS February 2026 baseline forecast of <strong style="color:var(--text)">$153.4B</strong> net farm income, then adjusts receipts and expenses based on how current commodity and input prices compare to the prices implied by that baseline.</p>
+        <div style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:16px;border:1px solid var(--border)">
+          <div class="mono" style="font-size:12px;color:var(--accent);margin-bottom:8px">Core Formula:</div>
+          <div class="mono" style="font-size:11px;color:var(--text);line-height:2">
+            Proxy NFI = Adj. Cash Receipts + Gov Payments + Other Income − Adj. Prod Expenses<br><br>
+            Where:<br>
+            Adj. Receipt(i) = BaseReceipt(i) × (LivePrice(i) / BasePrice(i))<br>
+            Adj. Feed Cost = BaseFeed × (1 + 0.6 × (CornΔ%))<br>
+            Adj. Fuel Cost = BaseFuel × (LiveCrude / BaseCrude)<br>
+            Adj. Fertilizer = BaseFert × (LiveUrea / BaseUrea)<br>
+            Adj. Livestock = BaseLvstk × (1 + 0.8 × (CattleΔ%))
+          </div>
+        </div>
+        <h3 style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">Key Assumptions</h3>
+        <div id="assumptionsList" style="display:flex;flex-direction:column;gap:8px"></div>
+        <h3 style="font-size:14px;font-weight:600;color:var(--text);margin:16px 0 8px">USDA Baseline Reference Prices</h3>
+        <div style="overflow-x:auto"><table id="refTable" style="width:100%;border-collapse:collapse;font-size:11px"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Baseline: USDA ERS Feb 5 2026 · Prices via web search · Next USDA update: Sep 3 2026</span>
+    <span>Proxy model — not investment advice · Not an official USDA product</span>
+  </footer>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+const BASE = {
+  nfi:153.4, cashReceipts:514.7, cropReceipts:240.8, animalReceipts:273.9,
+  govPayments:44.3, otherIncome:72.1, prodExpenses:477.7,
+  commodities: {
+    corn:{receipts:62.4,basePrice:4.30,unit:"bu"},soybeans:{receipts:41.8,basePrice:10.10,unit:"bu"},
+    wheat:{receipts:8.1,basePrice:5.50,unit:"bu"},cattle:{receipts:131.8,basePrice:198.0,unit:"cwt"},
+    hogs:{receipts:28.3,basePrice:90.0,unit:"cwt"},dairy:{receipts:42.3,basePrice:19.50,unit:"cwt"},
+    eggs:{receipts:9.0,basePrice:2.20,unit:"doz"},broilers:{receipts:45.4,basePrice:1.15,unit:"lb"}
+  },
+  expenses: {
+    feed:{value:65.6,sensitivity:0.6},fuel:{value:28.5,baseOil:65.0},
+    fertilizer:{value:35.8,baseUrea:500.0},livestock:{value:66.3,sensitivity:0.8}
+  }
+};
+
+const NFI_COMP = [
+  {y:2000,cr:93.4,ar:100.1,gp:22.9,oi:36.8,ex:198.5},{y:2001,cr:93.2,ar:105.2,gp:20.7,oi:37.2,ex:203.1},
+  {y:2002,cr:94.2,ar:101.0,gp:12.4,oi:38.5,ex:202.4},{y:2003,cr:105.2,ar:110.4,gp:16.5,oi:39.1,ex:213.2},
+  {y:2004,cr:112.5,ar:123.2,gp:13.0,oi:41.0,ex:228.0},{y:2005,cr:116.0,ar:126.3,gp:24.4,oi:44.0,ex:241.2},
+  {y:2006,cr:120.3,ar:123.6,gp:15.8,oi:47.5,ex:256.2},{y:2007,cr:151.1,ar:138.2,gp:11.9,oi:49.8,ex:271.3},
+  {y:2008,cr:179.5,ar:153.5,gp:12.2,oi:50.1,ex:296.8},{y:2009,cr:143.3,ar:138.0,gp:12.2,oi:47.2,ex:271.1},
+  {y:2010,cr:163.5,ar:149.4,gp:12.4,oi:48.3,ex:279.6},{y:2011,cr:206.0,ar:176.7,gp:10.4,oi:53.5,ex:319.2},
+  {y:2012,cr:216.4,ar:181.3,gp:10.6,oi:55.1,ex:339.2},{y:2013,cr:210.0,ar:189.5,gp:11.0,oi:55.9,ex:353.5},
+  {y:2014,cr:198.2,ar:207.9,gp:9.8,oi:56.0,ex:358.0},{y:2015,cr:179.2,ar:209.3,gp:10.8,oi:54.7,ex:357.5},
+  {y:2016,cr:178.7,ar:195.8,gp:13.4,oi:52.5,ex:347.0},{y:2017,cr:183.2,ar:203.3,gp:11.5,oi:54.0,ex:350.3},
+  {y:2018,cr:183.5,ar:204.7,gp:13.7,oi:56.3,ex:354.2},{y:2019,cr:175.8,ar:193.9,gp:22.4,oi:57.8,ex:355.5},
+  {y:2020,cr:184.5,ar:185.9,gp:46.5,oi:62.0,ex:348.6},{y:2021,cr:228.1,ar:205.5,gp:26.8,oi:66.3,ex:373.1},
+  {y:2022,cr:278.4,ar:230.1,gp:15.6,oi:68.2,ex:403.4},{y:2023,cr:248.8,ar:259.4,gp:12.1,oi:69.8,ex:431.3},
+  {y:2024,cr:232.5,ar:278.0,gp:14.5,oi:70.5,ex:456.0},{y:2025,cr:238.0,ar:290.9,gp:30.5,oi:71.2,ex:473.1},
+  {y:2026,cr:240.8,ar:273.9,gp:44.3,oi:72.1,ex:477.7}
+];
+
+const PRICE_HIST = [
+  {y:2014,corn:3.70,soybeans:10.10,wheat:5.99,cattle:154.6,hogs:76.1,dairy:22.34,crudeOil:93.2},
+  {y:2015,corn:3.61,soybeans:8.95,wheat:4.89,cattle:148.1,hogs:50.2,dairy:16.18,crudeOil:48.7},
+  {y:2016,corn:3.36,soybeans:9.47,wheat:3.89,cattle:121.8,hogs:46.4,dairy:14.87,crudeOil:43.3},
+  {y:2017,corn:3.36,soybeans:9.33,wheat:4.72,cattle:121.1,hogs:49.8,dairy:16.21,crudeOil:50.9},
+  {y:2018,corn:3.61,soybeans:8.60,wheat:5.16,cattle:117.1,hogs:46.0,dairy:15.89,crudeOil:64.9},
+  {y:2019,corn:3.56,soybeans:8.57,wheat:4.58,cattle:110.4,hogs:45.7,dairy:16.96,crudeOil:57.0},
+  {y:2020,corn:3.56,soybeans:8.57,wheat:4.58,cattle:108.5,hogs:43.1,dairy:18.25,crudeOil:39.2},
+  {y:2021,corn:5.45,soybeans:13.30,wheat:7.63,cattle:122.8,hogs:67.3,dairy:18.63,crudeOil:67.9},
+  {y:2022,corn:6.54,soybeans:14.20,wheat:8.83,cattle:145.9,hogs:72.0,dairy:22.18,crudeOil:94.5},
+  {y:2023,corn:4.75,soybeans:12.55,wheat:7.09,cattle:176.6,hogs:60.4,dairy:17.02,crudeOil:77.6},
+  {y:2024,corn:4.10,soybeans:10.80,wheat:5.70,cattle:187.9,hogs:58.5,dairy:19.80,crudeOil:75.9},
+  {y:2025,corn:4.20,soybeans:10.40,wheat:5.55,cattle:225.0,hogs:62.0,dairy:19.20,crudeOil:68.0}
+];
+
+const COMMODITY_META = [
+  {key:"corn",label:"Corn",emoji:"🌽",unit:"/bu",color:"#F59E0B",group:"grain"},
+  {key:"soybeans",label:"Soybeans",emoji:"🫘",unit:"/bu",color:"#10B981",group:"grain"},
+  {key:"wheat",label:"Wheat",emoji:"🌾",unit:"/bu",color:"#8B5CF6",group:"grain"},
+  {key:"cattle",label:"Live Cattle",emoji:"🐄",unit:"/cwt",color:"#EF4444",group:"livestock"},
+  {key:"hogs",label:"Lean Hogs",emoji:"🐖",unit:"/cwt",color:"#EC4899",group:"livestock"},
+  {key:"dairy",label:"Class III Milk",emoji:"🥛",unit:"/cwt",color:"#3B82F6",group:"livestock"},
+  {key:"crudeOil",label:"Crude Oil",emoji:"🛢️",unit:"/bbl",color:"#F97316",group:"input"}
+];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let liveData = null;
+let nfiResult = null;
+let compChart = null;
+let priceChart = null;
+let currentPriceGroup = "grain";
+
+// ═══════════════════════════════════════════
+// NFI CALCULATION
+// ═══════════════════════════════════════════
+function calcNFI(prices) {
+  if (!prices) return null;
+  const bc = BASE.commodities, be = BASE.expenses;
+  const rd = {}, ed = {};
+  let trd = 0, ted = 0;
+  ["corn","soybeans","wheat","cattle","hogs","dairy"].forEach(k => {
+    if (prices[k] && bc[k]) { rd[k] = (prices[k]/bc[k].basePrice - 1)*bc[k].receipts; trd += rd[k]; }
+  });
+  if (prices.corn) { ed.feed = (prices.corn/bc.corn.basePrice-1)*be.feed.sensitivity*be.feed.value; ted += ed.feed; }
+  if (prices.crudeOil) { ed.fuel = (prices.crudeOil/be.fuel.baseOil-1)*be.fuel.value; ted += ed.fuel; }
+  if (prices.urea) { ed.fertilizer = (prices.urea/be.fertilizer.baseUrea-1)*be.fertilizer.value; ted += ed.fertilizer; }
+  if (prices.cattle) { ed.livestock = (prices.cattle/bc.cattle.basePrice-1)*be.livestock.sensitivity*be.livestock.value; ted += ed.livestock; }
+  const adjR = BASE.cashReceipts + trd, adjE = BASE.prodExpenses + ted;
+  const proxy = adjR + BASE.govPayments + BASE.otherIncome - adjE;
+  const delta = proxy - BASE.nfi;
+  return {
+    proxyNFI: proxy.toFixed(1), nfiDelta: delta.toFixed(1), nfiPctChg: ((delta/BASE.nfi)*100).toFixed(1),
+    adjReceipts: adjR.toFixed(1), adjExpenses: adjE.toFixed(1),
+    receiptDeltas: rd, expenseDeltas: ed,
+    totalReceiptDelta: trd.toFixed(1), totalExpenseDelta: ted.toFixed(1),
+    direction: delta > 2 ? "UPSIDE" : delta < -2 ? "DOWNSIDE" : "TRACKING BASELINE",
+    signal: delta > 2 ? "positive" : delta < -2 ? "negative" : "neutral"
+  };
+}
+
+// ═══════════════════════════════════════════
+// LIVE PRICE FETCH
+// ═══════════════════════════════════════════
+async function fetchLivePrices() {
+  const btn = document.getElementById("refreshBtn");
+  const dot = document.getElementById("statusDot");
+  const txt = document.getElementById("statusText");
+  btn.textContent = "⟳ Refreshing..."; btn.disabled = true;
+  dot.style.background = "var(--warn)"; txt.textContent = "FETCHING...";
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514", max_tokens: 1000,
+        tools: [{type:"web_search_20250305",name:"web_search"}],
+        messages: [{role:"user",content:`Find the LATEST commodity futures closing prices. I need:
+1. Corn (CBOT $/bu) 2. Soybeans (CBOT $/bu) 3. Wheat (CBOT $/bu) 4. Live Cattle (CME $/cwt)
+5. Lean Hogs (CME $/cwt) 6. Class III Milk ($/cwt) 7. WTI Crude Oil ($/bbl) 8. Urea fertilizer ($/ton)
+Respond ONLY with JSON, no markdown: {"corn":4.52,"soybeans":11.63,"wheat":5.98,"cattle":246.32,"hogs":104.47,"dairy":18.21,"crudeOil":111.54,"urea":826,"asOf":"Apr 3, 2026","notes":"context"}`}]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content.map(i=>i.type==="text"?i.text:"").filter(Boolean).join("\n");
+    const match = text.replace(/```json|```/g,"").trim().match(/\{[\s\S]*\}/);
+    if (match) { liveData = JSON.parse(match[0]); } else throw new Error("Parse failed");
+  } catch(e) {
+    console.error(e);
+    liveData = {corn:4.52,soybeans:11.63,wheat:5.98,cattle:246.32,hogs:104.47,dairy:18.21,crudeOil:111.54,urea:826,asOf:"Apr 2, 2026 (fallback)",notes:"Using last known closing prices. Iran conflict driving oil/fertilizer higher."};
+  }
+  nfiResult = calcNFI(liveData);
+  renderDashboard();
+  dot.style.background = "var(--accent)";
+  txt.textContent = "UPDATED " + new Date().toLocaleTimeString();
+  btn.textContent = "⟳ Refresh Prices"; btn.disabled = false;
+}
+
+// ═══════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════
+function fmtD(v) { const n = parseFloat(v); return (n>=0?"+":"") + n.toFixed(1); }
+function dCol(v) { const n = parseFloat(v); return n>0.5?"var(--accent)":n<-0.5?"var(--danger)":"var(--warn)"; }
+function pctChg(l,b) { return l&&b ? ((l/b-1)*100).toFixed(1) : null; }
+
+function renderDashboard() {
+  if (!nfiResult || !liveData) return;
+  const r = nfiResult, p = liveData;
+
+  // Hero
+  document.getElementById("heroNFI").textContent = `$${r.proxyNFI}B`;
+  document.getElementById("heroDelta").innerHTML = `${fmtD(r.nfiDelta)}B (${fmtD(r.nfiPctChg)}%) vs USDA baseline`;
+  document.getElementById("heroDelta").style.color = dCol(r.nfiDelta);
+  const sig = document.getElementById("heroSignal");
+  sig.textContent = `● ${r.direction}`;
+  sig.style.background = r.signal==="positive"?"var(--accent-dim)":r.signal==="negative"?"var(--danger-dim)":"var(--warn-dim)";
+  sig.style.color = r.signal==="positive"?"var(--accent)":r.signal==="negative"?"var(--danger)":"var(--warn)";
+  const hc = document.getElementById("heroCard");
+  hc.style.background = `linear-gradient(135deg,var(--card) 0%,${r.signal==="positive"?"var(--accent-dim)":r.signal==="negative"?"var(--danger-dim)":"var(--warn-dim)"} 100%)`;
+  hc.style.borderColor = (r.signal==="positive"?"#00E59B":r.signal==="negative"?"#FF4D6A":"#FFB020")+"33";
+  document.getElementById("heroAsOf").textContent = `Prices as of: ${p.asOf||"—"}`;
+
+  // Summary table
+  document.getElementById("summaryTable").innerHTML = `
+    <div class="summary-line"><span class="mono" style="font-size:11px;color:var(--text-dim)">Adj. Cash Receipts</span><span class="mono" style="font-size:12px;font-weight:600">$${r.adjReceipts}B <span style="color:${dCol(r.totalReceiptDelta)};font-size:10px">(${fmtD(r.totalReceiptDelta)})</span></span></div>
+    <div class="summary-line"><span class="mono" style="font-size:11px;color:var(--text-dim)">Gov Payments (fixed)</span><span class="mono" style="font-size:12px;font-weight:600">$${BASE.govPayments}B</span></div>
+    <div class="summary-line"><span class="mono" style="font-size:11px;color:var(--text-dim)">Adj. Prod Expenses</span><span class="mono" style="font-size:12px;font-weight:600">$${r.adjExpenses}B <span style="color:${dCol(-r.totalExpenseDelta)};font-size:10px">(${fmtD(r.totalExpenseDelta)})</span></span></div>
+    <div class="summary-line" style="border:none;padding-top:8px"><span class="mono" style="font-size:12px;font-weight:700;color:var(--accent)">= Proxy NFI</span><span class="mono" style="font-size:14px;font-weight:700;color:var(--accent)">$${r.proxyNFI}B</span></div>`;
+
+  // KPIs
+  const kpis = [
+    {lbl:"Net Farm Income",val:`$${r.proxyNFI}B`,sub:`${fmtD(r.nfiPctChg)}% vs baseline`,col:dCol(r.nfiDelta),icon:"📊"},
+    {lbl:"Cash Receipts",val:`$${r.adjReceipts}B`,sub:`${fmtD(r.totalReceiptDelta)}B adj`,col:dCol(r.totalReceiptDelta),icon:"🌾"},
+    {lbl:"Gov Payments",val:`$${BASE.govPayments}B`,sub:"+45.2% YoY (USDA)",col:"var(--accent)",icon:"🏛"},
+    {lbl:"Prod Expenses",val:`$${r.adjExpenses}B`,sub:`${fmtD(r.totalExpenseDelta)}B adj`,col:dCol(-r.totalExpenseDelta),icon:"⚙️"}
+  ];
+  document.getElementById("kpiRow").innerHTML = kpis.map(k=>`
+    <div class="card stat-card"><div class="stat-label">${k.icon} ${k.lbl}</div>
+    <div class="stat-val">${k.val}</div><div class="stat-sub" style="color:${k.col}">${k.sub}</div></div>`).join("");
+
+  // Commodity cards
+  const cmds = [{key:"corn",label:"Corn",emoji:"🌽",unit:"/bu"},{key:"soybeans",label:"Soybeans",emoji:"🫘",unit:"/bu"},
+    {key:"wheat",label:"Wheat",emoji:"🌾",unit:"/bu"},{key:"cattle",label:"Live Cattle",emoji:"🐄",unit:"/cwt"},
+    {key:"hogs",label:"Lean Hogs",emoji:"🐖",unit:"/cwt"},{key:"dairy",label:"Class III Milk",emoji:"🥛",unit:"/cwt"}];
+  document.getElementById("commodityCards").innerHTML = cmds.map(c=>{
+    const lv=p[c.key], bp=BASE.commodities[c.key]?.basePrice, pct=pctChg(lv,bp), d=r.receiptDeltas[c.key];
+    const pc=parseFloat(pct);
+    return `<div class="card commodity-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px">${c.emoji} <span style="font-weight:600;font-size:12px">${c.label}</span></span>
+        ${pct?`<span class="pill" style="background:${pc>=0?"var(--accent-dim)":"var(--danger-dim)"};color:${pc>=0?"var(--accent)":"var(--danger)"}">${pc>=0?"+":""}${pct}%</span>`:""}
+      </div>
+      <div class="mono" style="font-size:22px;font-weight:700;margin-top:6px">$${lv||"—"}<span style="font-size:10px;color:var(--text-muted);font-weight:400">${c.unit}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px">
+        <span class="mono" style="font-size:10px;color:var(--text-muted)">Base: $${bp}</span>
+        ${d!==undefined?`<span class="mono" style="font-size:10px;color:${dCol(d)}">${fmtD(d)}B receipts</span>`:""}
+      </div></div>`;
+  }).join("");
+
+  // Expense cards
+  const exps = [{key:"crudeOil",label:"WTI Crude Oil",emoji:"🛢️",base:65.0,unit:"/bbl",exp:"fuel",expL:"Fuel"},
+    {key:"urea",label:"Urea (Fertilizer)",emoji:"🧪",base:500,unit:"/ton",exp:"fertilizer",expL:"Fertilizer"}];
+  document.getElementById("expenseCards").innerHTML = exps.map(c=>{
+    const lv=p[c.key],pct=pctChg(lv,c.base),d=r.expenseDeltas[c.exp]; const pc=parseFloat(pct);
+    return `<div class="card" style="flex:1 1 200px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px">${c.emoji} <span style="font-weight:600;font-size:12px">${c.label}</span></span>
+        ${pct?`<span class="pill" style="background:${pc>=0?"var(--danger-dim)":"var(--accent-dim)"};color:${pc>=0?"var(--danger)":"var(--accent)"}">${pc>=0?"+":""}${pct}% ${pc>=10?"⚠":""}</span>`:""}
+      </div>
+      <div class="mono" style="font-size:22px;font-weight:700;margin-top:6px">$${lv||"—"}<span style="font-size:10px;color:var(--text-muted);font-weight:400">${c.unit}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px">
+        <span class="mono" style="font-size:10px;color:var(--text-muted)">USDA base: $${c.base}</span>
+        ${d!==undefined?`<span class="mono" style="font-size:10px;color:${d>0?"var(--danger)":"var(--accent)"}">${d>0?"+":""}${d.toFixed(1)}B ${c.expL.toLowerCase()} cost</span>`:""}
+      </div></div>`;
+  }).join("");
+
+  // NFI Bridge
+  const items = [{l:"USDA Baseline NFI",v:BASE.nfi,t:"base"},
+    ...Object.entries(r.receiptDeltas).map(([k,v])=>({l:`${k[0].toUpperCase()+k.slice(1)} receipts`,v,t:v>=0?"pos":"neg"})),
+    ...Object.entries(r.expenseDeltas).map(([k,v])=>({l:`${k[0].toUpperCase()+k.slice(1)} expense`,v:-v,t:-v>=0?"pos":"neg"})),
+    {l:"Live Proxy NFI",v:parseFloat(r.proxyNFI),t:"total"}];
+  document.getElementById("bridgeSection").innerHTML = `
+    <div class="lbl" style="margin-bottom:8px;padding-left:4px">NFI Bridge — USDA Baseline → Live Proxy</div>
+    <div class="card">${items.map(i=>{
+      const abs=Math.abs(i.v), pct=(i.t==="base"||i.t==="total")?Math.min(abs/200*100,100):Math.min(abs/40*100,100);
+      const col=i.t==="base"?"var(--blue)":i.t==="total"?"var(--accent)":i.t==="pos"?"var(--accent)":"var(--danger)";
+      return `<div class="bridge-row"><span class="mono" style="font-size:10px;color:var(--text-dim);width:130px;flex-shrink:0">${i.l}</span>
+        <div class="bridge-bar-bg"><div class="bridge-bar" style="width:${pct}%;background:${col};opacity:0.7"></div></div>
+        <span class="mono" style="font-size:11px;font-weight:600;width:65px;text-align:right;color:${i.t==="base"||i.t==="total"?"var(--text)":col}">
+        ${i.t==="base"||i.t==="total"?`$${i.v.toFixed(1)}B`:`${i.v>=0?"+":""}${i.v.toFixed(1)}B`}</span></div>`;
+    }).join("")}</div>`;
+
+  // Context
+  if (p.notes) { document.getElementById("contextCard").classList.remove("hidden"); document.getElementById("contextText").textContent = p.notes; }
+
+  // Update price chart with live 2026 point
+  renderPriceChart();
+  renderMethodology();
+}
+
+// ═══════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════
+function renderComponentsChart(mode) {
+  const ctx = document.getElementById("nfiComponentsChart").getContext("2d");
+  if (compChart) compChart.destroy();
+  const labels = NFI_COMP.map(d => d.y >= 2025 ? d.y+"F" : "'"+String(d.y).slice(2));
+  const nfiLine = NFI_COMP.map(d => d.cr + d.ar + d.gp + d.oi - d.ex);
+
+  const datasets = mode === "stacked" ? [
+    {label:"Crop Receipts",data:NFI_COMP.map(d=>d.cr),backgroundColor:"#F59E0B99",borderColor:"#F59E0B",borderWidth:1,stack:"rev",order:2},
+    {label:"Animal Receipts",data:NFI_COMP.map(d=>d.ar),backgroundColor:"#EF444499",borderColor:"#EF4444",borderWidth:1,stack:"rev",order:2},
+    {label:"Gov Payments",data:NFI_COMP.map(d=>d.gp),backgroundColor:"#8B5CF699",borderColor:"#8B5CF6",borderWidth:1,stack:"rev",order:2},
+    {label:"Other Income",data:NFI_COMP.map(d=>d.oi),backgroundColor:"#3B82F699",borderColor:"#3B82F6",borderWidth:1,stack:"rev",order:2},
+    {label:"Prod Expenses",data:NFI_COMP.map(d=>d.ex),type:"line",borderColor:"#FF4D6A",borderWidth:2,borderDash:[6,3],pointRadius:2,pointBackgroundColor:"#FF4D6A",fill:false,order:1},
+    {label:"Net Farm Income",data:nfiLine,type:"line",borderColor:"#00E59B",borderWidth:3,pointRadius:3,pointBackgroundColor:"#00E59B",fill:false,order:0}
+  ] : [
+    {label:"Gross Revenue",data:NFI_COMP.map(d=>d.cr+d.ar+d.gp+d.oi),backgroundColor:"#4D9EFF88",borderColor:"#4D9EFF",borderWidth:1,stack:"a",order:2},
+    {label:"Prod Expenses",data:NFI_COMP.map(d=>d.ex),backgroundColor:"#FF4D6A66",borderColor:"#FF4D6A",borderWidth:1,stack:"b",order:2},
+    {label:"Net Farm Income",data:nfiLine,type:"line",borderColor:"#00E59B",borderWidth:3,pointRadius:3,pointBackgroundColor:"#00E59B",fill:false,order:0}
+  ];
+
+  compChart = new Chart(ctx, {
+    type: "bar", data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false, interaction: {mode:"index",intersect:false},
+      plugins: { legend: { display: true, position: "bottom", labels: { color: "#8B95A8", font: {family:"'IBM Plex Mono'",size:10}, boxWidth: 12, padding: 12 }}},
+      scales: {
+        x: { stacked: mode==="stacked", grid: {color:"#1B233244"}, ticks: {color:"#4A5568",font:{family:"'IBM Plex Mono'",size:9}}},
+        y: { stacked: mode==="stacked", grid: {color:"#1B233244"}, ticks: {color:"#4A5568",font:{family:"'IBM Plex Mono'",size:9},callback:v=>"$"+v+"B"}}
+      }
+    }
+  });
+}
+
+function setComponentMode(mode) {
+  document.getElementById("btnStacked").classList.toggle("active", mode==="stacked");
+  document.getElementById("btnGrouped").classList.toggle("active", mode==="grouped");
+  renderComponentsChart(mode);
+}
+
+function renderPriceChart() {
+  const ctx = document.getElementById("priceHistoryChart").getContext("2d");
+  if (priceChart) priceChart.destroy();
+  const group = currentPriceGroup;
+  const metas = COMMODITY_META.filter(c=>c.group===group);
+  const hist = [...PRICE_HIST];
+  if (liveData) { const pt = {y:2026}; metas.forEach(m=>{if(liveData[m.key])pt[m.key]=liveData[m.key];}); hist.push(pt); }
+  const labels = hist.map(d=>d.y>=2025?(d.y>=2026?d.y+"*":d.y):"'"+String(d.y).slice(2));
+
+  const datasets = metas.map(m => ({
+    label: m.label, data: hist.map(d=>d[m.key]||null),
+    borderColor: m.color, backgroundColor: m.color+"22", borderWidth: 2,
+    pointRadius: hist.map(d=>d.y>=2026?5:2), pointBackgroundColor: m.color,
+    pointBorderColor: hist.map(d=>d.y>=2026?"#E8EDF5":m.color),
+    pointBorderWidth: hist.map(d=>d.y>=2026?2:0),
+    fill: true, tension: 0.3, spanGaps: true
+  }));
+
+  priceChart = new Chart(ctx, {
+    type: "line", data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false, interaction: {mode:"index",intersect:false},
+      plugins: { legend: { display: true, position: "bottom", labels: { color: "#8B95A8", font: {family:"'IBM Plex Mono'",size:10}, boxWidth: 12, padding: 12 }}},
+      scales: {
+        x: { grid: {color:"#1B233244"}, ticks: {color:"#4A5568",font:{family:"'IBM Plex Mono'",size:9}}},
+        y: { grid: {color:"#1B233244"}, ticks: {color:"#4A5568",font:{family:"'IBM Plex Mono'",size:9},callback:v=>group==="input"?"$"+v:"$"+v.toFixed(v<20?2:0)}}
+      }
+    }
+  });
+}
+
+function setPriceGroup(g) {
+  currentPriceGroup = g;
+  ["btnGrain","btnLivestock","btnInput"].forEach(id=>document.getElementById(id).classList.remove("active"));
+  document.getElementById(g==="grain"?"btnGrain":g==="livestock"?"btnLivestock":"btnInput").classList.add("active");
+  renderPriceChart();
+}
+
+// ═══════════════════════════════════════════
+// METHODOLOGY
+// ═══════════════════════════════════════════
+function renderMethodology() {
+  const assumptions = [
+    ["Production Volumes","Held constant at USDA 2026 forecast levels. In reality, acreage shifts and yields will alter volumes."],
+    ["Price Pass-Through","100% for commodity receipts (price × volume). In practice, basis, hedging, and contract timing create lags."],
+    ["Feed-Corn Correlation","60% sensitivity — a 10% rise in corn adds ~6% to feed costs. Historical correlation ranges 50-70%."],
+    ["Fuel-Crude Linkage","Linear scaling. USDA baseline assumed ~$65/bbl WTI; current Iran conflict has pushed crude to ~$112."],
+    ["Fertilizer-Urea","Urea used as proxy for all nitrogen costs. USDA baseline ~$500/ton; current prices ~$826/ton (+65%)."],
+    ["Gov Payments","Held constant at $44.3B. In practice, ARC/PLC payments adjust inversely with prices, so this overstates NFI when crop prices rise."],
+    ["What's NOT Modeled","Weather/yield risk, tariff changes, currency effects, farm real estate values, interest rate shifts, insurance indemnities."]
+  ];
+  document.getElementById("assumptionsList").innerHTML = assumptions.map(([t,d])=>
+    `<div style="padding:8px 12px;background:var(--card-alt);border-radius:6px;border:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px">${t}</div>
+      <div class="mono" style="font-size:10px;color:var(--text-dim);line-height:1.5">${d}</div></div>`).join("");
+
+  const p = liveData || {};
+  let rows = "<thead><tr>" + ["Commodity","Base Price","Base Receipts ($B)","Current","Δ%"].map(h=>
+    `<th class="mono" style="padding:6px 8px;text-align:left;color:var(--text-muted);font-size:10px;font-weight:600;border-bottom:1px solid var(--border)">${h}</th>`).join("") + "</tr></thead><tbody>";
+  Object.entries(BASE.commodities).forEach(([k,c])=>{
+    const lv = p[k], pct = lv ? ((lv/c.basePrice-1)*100).toFixed(1) : null;
+    rows += `<tr style="border-bottom:1px solid #1B233222">
+      <td class="mono" style="padding:5px 8px;color:var(--text)">${k}</td>
+      <td class="mono" style="padding:5px 8px">$${c.basePrice}/${c.unit}</td>
+      <td class="mono" style="padding:5px 8px">$${c.receipts}</td>
+      <td class="mono" style="padding:5px 8px;color:var(--text)">${lv?`$${lv}`:"—"}</td>
+      <td class="mono" style="padding:5px 8px;color:${pct?dCol(parseFloat(pct)):"var(--text-muted)"}">${pct?`${parseFloat(pct)>=0?"+":""}${pct}%`:"—"}</td></tr>`;
+  });
+  document.getElementById("refTable").innerHTML = rows + "</tbody>";
+}
+
+// ═══════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════
+function showTab(tab) {
+  document.getElementById("dashboardTab").classList.toggle("hidden", tab !== "dashboard");
+  document.getElementById("methodologyTab").classList.toggle("hidden", tab !== "methodology");
+  document.getElementById("tabDash").classList.toggle("active", tab === "dashboard");
+  document.getElementById("tabMethod").classList.toggle("active", tab === "methodology");
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+Chart.defaults.color = "#8B95A8";
+Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+renderComponentsChart("stacked");
+renderPriceChart();
+renderMethodology();
+fetchLivePrices();
+</script>
+</body>
+</html>
