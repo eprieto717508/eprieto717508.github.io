@@ -304,7 +304,7 @@ function calcNFI(prices) {
 }
 
 // ═══════════════════════════════════════════
-// LIVE PRICE FETCH
+// LIVE PRICE FETCH — reads prices.json auto-updated by GitHub Actions
 // ═══════════════════════════════════════════
 async function fetchLivePrices() {
   const btn = document.getElementById("refreshBtn");
@@ -313,24 +313,13 @@ async function fetchLivePrices() {
   btn.textContent = "⟳ Refreshing..."; btn.disabled = true;
   dot.style.background = "var(--warn)"; txt.textContent = "FETCHING...";
   try {
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514", max_tokens: 1000,
-        tools: [{type:"web_search_20250305",name:"web_search"}],
-        messages: [{role:"user",content:`Find the LATEST commodity futures closing prices. I need:
-1. Corn (CBOT $/bu) 2. Soybeans (CBOT $/bu) 3. Wheat (CBOT $/bu) 4. Live Cattle (CME $/cwt)
-5. Lean Hogs (CME $/cwt) 6. Class III Milk ($/cwt) 7. WTI Crude Oil ($/bbl) 8. Urea fertilizer ($/ton)
-Respond ONLY with JSON, no markdown: {"corn":4.52,"soybeans":11.63,"wheat":5.98,"cattle":246.32,"hogs":104.47,"dairy":18.21,"crudeOil":111.54,"urea":826,"asOf":"Apr 3, 2026","notes":"context"}`}]
-      })
-    });
-    const data = await resp.json();
-    const text = data.content.map(i=>i.type==="text"?i.text:"").filter(Boolean).join("\n");
-    const match = text.replace(/```json|```/g,"").trim().match(/\{[\s\S]*\}/);
-    if (match) { liveData = JSON.parse(match[0]); } else throw new Error("Parse failed");
+    // Cache-bust with a timestamp so we always get the latest file
+    const resp = await fetch("prices.json?t=" + Date.now());
+    if (!resp.ok) throw new Error("prices.json not found (HTTP " + resp.status + ")");
+    liveData = await resp.json();
   } catch(e) {
-    console.error(e);
-    liveData = {corn:4.52,soybeans:11.63,wheat:5.98,cattle:246.32,hogs:104.47,dairy:18.21,crudeOil:111.54,urea:826,asOf:"Apr 2, 2026 (fallback)",notes:"Using last known closing prices. Iran conflict driving oil/fertilizer higher."};
+    console.error("Failed to load prices.json:", e);
+    liveData = {corn:4.52,soybeans:11.63,wheat:5.98,cattle:246.32,hogs:104.47,dairy:18.21,crudeOil:111.54,urea:826,asOf:"Apr 2, 2026 (fallback)",notes:"Could not load prices.json — using baked-in fallback values. Check that the file exists in your repo and GitHub Actions workflow is running."};
   }
   nfiResult = calcNFI(liveData);
   renderDashboard();
