@@ -4,10 +4,10 @@
   "wheat": 5.98,
   "cattle": 245.55,
   "hogs": 107.08,
-  "dairy": 17.34,
-  "crudeOil": 113.68,
+  "dairy": 17.38,
+  "crudeOil": 95.41,
   "urea": 620,
-  "asOf": "Apr 07, 2026 18:49 UTC",
-  "fetchedAt": "2026-04-07T18:49:41.181531+00:00",
+  "asOf": "Apr 07, 2026 23:56 UTC",
+  "fetchedAt": "2026-04-07T23:56:11.417312+00:00",
   "notes": "Auto-updated via GitHub Actions using Yahoo Finance futures data. Urea fertilizer price is a static estimate (no free API available)."
 }
