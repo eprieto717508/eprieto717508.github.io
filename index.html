@@ -5,7 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>U.S. Net Farm Income — Live Proxy Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+// Fallback to unpkg if jsdelivr failed, then cdnjs as last resort
+if (typeof Chart === 'undefined') {
+  document.write('<script src="https://unpkg.com/chart.js@4.4.4/dist/chart.umd.min.js"><\/script>');
+}
+</script>
+<script>
+if (typeof Chart === 'undefined') {
+  document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"><\/script>');
+}
+</script>
 <style>
 :root {
   --bg: #06090F; --card: #0D1117; --card-alt: #111820;
@@ -555,10 +566,20 @@ function showTab(tab) {
 // ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
-Chart.defaults.color = "#8B95A8";
-Chart.defaults.font.family = "'IBM Plex Mono', monospace";
-renderComponentsChart("stacked");
-renderPriceChart();
+if (typeof Chart !== 'undefined') {
+  Chart.defaults.color = "#8B95A8";
+  Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+  renderComponentsChart("stacked");
+  renderPriceChart();
+} else {
+  // Chart.js failed to load from all CDNs — show a message in the chart containers
+  const msg = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-family:\'IBM Plex Mono\',monospace;font-size:11px">⚠ Chart.js failed to load. Check your network connection or firewall settings.</div>';
+  const nfiCanvas = document.getElementById("nfiComponentsChart");
+  const priceCanvas = document.getElementById("priceHistoryChart");
+  if (nfiCanvas) nfiCanvas.parentElement.innerHTML = msg;
+  if (priceCanvas) priceCanvas.parentElement.innerHTML = msg;
+  console.error("Chart.js could not be loaded from any CDN. Charts will not render.");
+}
 renderMethodology();
 fetchLivePrices();
 </script>
