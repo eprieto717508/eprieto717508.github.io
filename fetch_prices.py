@@ -28,7 +28,7 @@ CENTS_TO_DOLLARS = {"corn", "soybeans", "wheat"}
 FALLBACK = {
     "corn": 4.52, "soybeans": 11.63, "wheat": 5.98,
     "cattle": 246.32, "hogs": 104.47, "dairy": 18.21,
-    "crudeOil": 75.50, "urea": 620,
+    "crudeOil": 111.54, "urea": 826,
 }
 
 
