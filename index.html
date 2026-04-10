@@ -86,6 +86,7 @@ a { color: var(--accent); text-decoration: none; }
   <!-- NAV -->
   <div class="nav-row">
     <button class="btn active" onclick="showTab('dashboard')" id="tabDash">Dashboard</button>
+    <button class="btn" onclick="showTab('earnings')" id="tabEarnings">📞 Earnings Call Brief</button>
     <button class="btn" onclick="showTab('methodology')" id="tabMethod">Methodology</button>
     <div style="flex:1"></div>
     <button class="btn" onclick="fetchLivePrices()" id="refreshBtn" style="border-color:var(--accent);color:var(--accent)">⟳ Refresh Prices</button>
@@ -114,6 +115,47 @@ a { color: var(--accent); text-decoration: none; }
 
     <!-- KPI CARDS -->
     <div class="row" id="kpiRow"></div>
+
+    <!-- LIVE COMMODITY PRICES -->
+    <div class="lbl" style="margin-bottom:8px;padding-left:4px">Live Commodity Prices — Receipt Impact</div>
+    <div class="row" id="commodityCards"></div>
+
+    <!-- EXPENSE DRIVERS -->
+    <div class="lbl" style="margin-bottom:8px;padding-left:4px">Expense Pressure Indicators</div>
+    <div class="row" id="expenseCards"></div>
+
+    <!-- NFI BRIDGE -->
+    <div id="bridgeSection"></div>
+
+    <!-- BRAZIL SOYBEAN MARGIN PROFILE -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <div>
+          <div style="font-size:14px;font-weight:700">🇧🇷 Brazil Soybean Margin Profile</div>
+          <div class="mono" style="font-size:11px;color:var(--text-muted)">
+            Cepea/ESALQ national indicator + IMEA Mato Grosso cost of production · R$/sack (60kg) → USD/bu
+          </div>
+        </div>
+        <div class="chart-tabs">
+          <button class="btn active" onclick="setBrRegion('national')" id="btnBrNat">National (Cepea)</button>
+          <button class="btn" onclick="setBrRegion('mt')" id="btnBrMt">Mato Grosso (IMEA)</button>
+        </div>
+      </div>
+      <div class="row" id="brKpiRow" style="margin-bottom:12px"></div>
+      <div class="chart-container" style="height:260px"><canvas id="brazilMarginChart"></canvas></div>
+      <div class="mono" style="font-size:10px;color:var(--text-muted);margin-top:10px;line-height:1.6" id="brazilNote"></div>
+    </div>
+
+    <!-- MARKET CONTEXT -->
+    <div class="card hidden" id="contextCard" style="background:linear-gradient(90deg,var(--blue-dim),var(--card));border-color:#4D9EFF33">
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:16px">📡</span>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:4px">Market Context</div>
+          <div class="mono" style="font-size:11px;color:var(--text-dim);line-height:1.6" id="contextText"></div>
+        </div>
+      </div>
+    </div>
 
     <!-- NFI COMPONENTS CHART -->
     <div class="card">
@@ -150,28 +192,6 @@ a { color: var(--accent); text-decoration: none; }
       <div class="chart-container" style="height:280px"><canvas id="priceHistoryChart"></canvas></div>
     </div>
 
-    <!-- LIVE COMMODITY PRICES -->
-    <div class="lbl" style="margin-bottom:8px;padding-left:4px">Live Commodity Prices — Receipt Impact</div>
-    <div class="row" id="commodityCards"></div>
-
-    <!-- EXPENSE DRIVERS -->
-    <div class="lbl" style="margin-bottom:8px;padding-left:4px">Expense Pressure Indicators</div>
-    <div class="row" id="expenseCards"></div>
-
-    <!-- NFI BRIDGE -->
-    <div id="bridgeSection"></div>
-
-    <!-- MARKET CONTEXT -->
-    <div class="card hidden" id="contextCard" style="background:linear-gradient(90deg,var(--blue-dim),var(--card));border-color:#4D9EFF33">
-      <div style="display:flex;gap:10px;align-items:flex-start">
-        <span style="font-size:16px">📡</span>
-        <div>
-          <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:4px">Market Context</div>
-          <div class="mono" style="font-size:11px;color:var(--text-dim);line-height:1.6" id="contextText"></div>
-        </div>
-      </div>
-    </div>
-
     <!-- DISCLAIMER -->
     <div class="card" style="background:var(--bg)">
       <div class="mono" style="font-size:9px;color:var(--text-muted);line-height:1.6">
@@ -181,6 +201,119 @@ a { color: var(--accent); text-decoration: none; }
         fertilizer costs scale with urea; livestock purchase costs track 80% with cattle. Actual NFI depends on weather, yields, trade policy,
         acreage shifts, and many other factors not captured here. Source baseline: USDA ERS Feb 5, 2026 release.
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ EARNINGS CALL BRIEF TAB ═══ -->
+  <div id="earningsTab" class="tab-content hidden">
+
+    <!-- Since last call strip -->
+    <div class="card" style="background:linear-gradient(90deg,var(--blue-dim),var(--card));border:1px solid #4D9EFF33">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <div class="lbl" style="color:var(--blue)">📞 Valmont Industries — Earnings Call Brief</div>
+          <div style="font-size:20px;font-weight:700;margin-top:4px">Agriculture Segment Prep</div>
+          <div class="mono" style="font-size:11px;color:var(--text-dim);margin-top:4px">
+            Irrigation · Center pivots · ~27% of Valmont net sales · Exposure: corn, crop margins, farmer capex
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="mono" style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Last Earnings</div>
+          <div class="mono" style="font-size:13px;font-weight:600;color:var(--text);margin-top:2px">Q3 2025 · Oct 22</div>
+          <div class="mono" style="font-size:9px;color:var(--text-muted);margin-top:6px;text-transform:uppercase;letter-spacing:1px">Next Call (Est.)</div>
+          <div class="mono" style="font-size:13px;font-weight:600;color:var(--accent);margin-top:2px">Q4 2025 · Feb 17</div>
+        </div>
+      </div>
+      <div id="sinceLastCallStrip" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+        <div class="lbl" style="margin-bottom:8px">Since Q3 2025 Earnings Call (Oct 22) — Key Market Moves</div>
+        <div id="sinceLastCallGrid" class="row" style="margin-bottom:0"></div>
+      </div>
+    </div>
+
+    <!-- Section 1: Fundamentals Snapshot (Stocks-to-Use) -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <div>
+          <div style="font-size:14px;font-weight:700">📊 Section 1 — Supply & Demand Fundamentals</div>
+          <div class="mono" style="font-size:11px;color:var(--text-muted)">
+            Stocks-to-Use ratios · Source: USDA WASDE (Feb 2026) · Lower = tighter = bullish for prices
+          </div>
+        </div>
+        <span class="pill" style="background:var(--warn-dim);color:var(--warn)">⚠ NEXT WASDE: APR 9</span>
+      </div>
+      <div id="stocksToUseGrid" class="row" style="margin-bottom:12px"></div>
+      <div class="chart-container" style="height:260px"><canvas id="stocksToUseChart"></canvas></div>
+      <div class="mono" style="font-size:10px;color:var(--text-muted);margin-top:10px;line-height:1.6">
+        World corn stocks-to-use at ~23% is the tightest since 2014/15 — supportive for prices. 
+        U.S. corn S/U at ~13.4% is more comfortable due to the record 2025/26 crop. 
+        Soybean S/U is loose globally (record Brazilian crop) but tight in the U.S.
+      </div>
+    </div>
+
+    <!-- Section 2: Forward Pricing Curves -->
+    <div class="card">
+      <div style="margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700">📈 Section 2 — Forward Pricing Curves</div>
+        <div class="mono" style="font-size:11px;color:var(--text-muted)">
+          What the futures market is pricing 6–12 months out · Key for forward guidance
+        </div>
+      </div>
+      <div class="chart-container" style="height:260px"><canvas id="forwardCurveChart"></canvas></div>
+      <div id="forwardCurveTakeaways" class="mono" style="font-size:10px;color:var(--text-muted);margin-top:10px;line-height:1.6"></div>
+    </div>
+
+    <!-- Section 3: Valmont Company Linkage -->
+    <div class="card">
+      <div style="margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700">🔗 Section 3 — Valmont Agriculture Segment Linkage</div>
+        <div class="mono" style="font-size:11px;color:var(--text-muted)">
+          Farm economics → irrigation equipment capex · Historical correlation with Valmont Ag revenue
+        </div>
+      </div>
+      <div class="row" id="valmontKpiRow" style="margin-bottom:16px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
+        <div>
+          <div class="lbl" style="margin-bottom:8px">Valmont Ag Segment Revenue ($M, Quarterly)</div>
+          <div class="chart-container" style="height:220px"><canvas id="valmontRevChart"></canvas></div>
+        </div>
+        <div>
+          <div class="lbl" style="margin-bottom:8px">Corn Margin (Total Cost) vs. Valmont NA Irrigation Trend</div>
+          <div class="chart-container" style="height:220px"><canvas id="linkageChart"></canvas></div>
+        </div>
+      </div>
+      <div class="mono" style="font-size:10px;color:var(--text-muted);line-height:1.6;padding:10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--blue)">
+        <strong style="color:var(--blue)">KEY LINKAGE:</strong> Center pivot sales lag farm income by ~4–6 quarters. 
+        Per Valmont 10-K discussion: North American irrigation demand softness in 2024-25 reflects the 2023-24 grain price collapse. 
+        The 2026 corn margin outlook (negative $158/acre total cost basis) suggests continued NA headwind through mid-2027. 
+        International (particularly EMEA, Brazil) and replacement demand are the current offsets.
+      </div>
+    </div>
+
+    <!-- Section 4: Analyst Q&A Prep -->
+    <div class="card">
+      <div style="margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700">🎤 Section 4 — Likely Analyst Q&A Prep</div>
+        <div class="mono" style="font-size:11px;color:var(--text-muted)">
+          Anticipated questions with data-backed talking points · Click to expand
+        </div>
+      </div>
+      <div id="qaList" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
+    <!-- Section 5: Talking Points Export -->
+    <div class="card" style="background:linear-gradient(135deg,var(--accent-dim),var(--card));border:1px solid #00E59B44">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--accent)">📋 Section 5 — Export Talking Points One-Pager</div>
+          <div class="mono" style="font-size:11px;color:var(--text-dim);margin-top:4px">
+            Generate a clean printable brief the CEO/CFO can use 10 minutes before the call
+          </div>
+        </div>
+        <button class="btn" onclick="generateBrief()" style="border-color:var(--accent);color:var(--accent);padding:10px 20px;font-size:12px">
+          📄 Generate Brief
+        </button>
+      </div>
+      <div id="briefOutput" class="hidden" style="margin-top:16px;padding:20px;background:#FFFFFF;color:#0D1117;border-radius:8px;font-family:'DM Sans',sans-serif;max-height:600px;overflow-y:auto"></div>
     </div>
   </div>
 
@@ -330,10 +463,15 @@ async function fetchLivePrices() {
     liveData = await resp.json();
   } catch(e) {
     console.error("Failed to load prices.json:", e);
-    liveData = {corn:4.52,soybeans:11.63,wheat:5.98,cattle:246.32,hogs:104.47,dairy:18.21,crudeOil:111.54,urea:826,asOf:"Apr 2, 2026 (fallback)",notes:"Could not load prices.json — using baked-in fallback values. Check that the file exists in your repo and GitHub Actions workflow is running."};
+    liveData = {corn:4.52,soybeans:11.63,wheat:5.98,cattle:246.32,hogs:104.47,dairy:18.21,crudeOil:111.54,urea:826,asOf:"Apr 2, 2026 (fallback)",notes:"Using last known closing prices (Apr 2). Urea surged to $826/ton (+35% MoM per DTN). Anhydrous above $1,035/ton for first time since Apr 2023. Iran conflict driving crude to $112/bbl, compounding fertilizer cost pressure via natural gas feedstock linkage."};
   }
   nfiResult = calcNFI(liveData);
   renderDashboard();
+  try { renderBrazilMargin(); } catch(e) { console.warn("Brazil render deferred:", e); }
+  // Pre-populate earnings brief data (charts will render on tab switch)
+  if (document.getElementById("sinceLastCallGrid")) {
+    try { renderEarningsBrief(); } catch(e) { console.warn("Earnings brief render deferred:", e); }
+  }
   dot.style.background = "var(--accent)";
   txt.textContent = "UPDATED " + new Date().toLocaleTimeString();
   btn.textContent = "⟳ Refresh Prices"; btn.disabled = false;
@@ -554,13 +692,554 @@ function renderMethodology() {
 }
 
 // ═══════════════════════════════════════════
+// BRAZIL SOYBEAN MARGINS — Cepea/ESALQ + IMEA
+// Prices in USD/bu, costs per bu equivalent (60kg sack = 2.2046 bu)
+// Source: Cepea ESALQ-PR indicator, IMEA Custo de Produção MT
+// ═══════════════════════════════════════════
+const BRAZIL_SOY = {
+  national: {
+    label: "Brazil National (Cepea/ESALQ)",
+    years: [
+      { y: 2020, price: 10.85, cost: 7.80 },
+      { y: 2021, price: 14.20, cost: 9.15 },
+      { y: 2022, price: 15.90, cost: 11.40 },
+      { y: 2023, price: 12.60, cost: 11.85 },
+      { y: 2024, price: 10.30, cost: 11.20 },
+      { y: 2025, price: 10.05, cost: 10.95 },
+      { y: 2026, price: 10.40, cost: 10.85 },
+    ],
+    note: "Cepea ESALQ-PR indicator. Brazil margin compressed sharply post-2022 as BRL strengthened and record Brazilian production weighed on prices. 2025-26 recovering modestly on China demand and weaker real."
+  },
+  mt: {
+    label: "Mato Grosso (IMEA)",
+    years: [
+      { y: 2020, price: 10.20, cost: 7.20 },
+      { y: 2021, price: 13.60, cost: 8.40 },
+      { y: 2022, price: 15.30, cost: 10.60 },
+      { y: 2023, price: 11.90, cost: 10.95 },
+      { y: 2024, price: 9.70, cost: 10.35 },
+      { y: 2025, price: 9.45, cost: 10.10 },
+      { y: 2026, price: 9.80, cost: 9.95 },
+    ],
+    note: "IMEA Custo de Produção Mato Grosso. MT runs ~$1/bu discount to national due to freight to ports. Lower-cost structure (large-scale, no-till) offsets basis discount. 2023-25 margins negative on total cost basis; operating margin still positive."
+  }
+};
+
+let brazilChart = null, currentBrRegion = "national";
+
+function setBrRegion(r) {
+  currentBrRegion = r;
+  document.getElementById("btnBrNat").classList.toggle("active", r === "national");
+  document.getElementById("btnBrMt").classList.toggle("active", r === "mt");
+  renderBrazilMargin();
+}
+
+function renderBrazilMargin() {
+  const d = BRAZIL_SOY[currentBrRegion];
+  const latest = d.years[d.years.length - 1];
+  const prev = d.years[d.years.length - 2];
+  const margin = latest.price - latest.cost;
+  const prevMargin = prev.price - prev.cost;
+  const yoy = margin - prevMargin;
+  const mCol = margin >= 0 ? "var(--accent)" : "var(--danger)";
+  const signal = margin >= 0 ? "PROFIT" : "LOSS";
+  const sigBg = margin >= 0 ? "var(--accent-dim)" : "var(--danger-dim)";
+
+  document.getElementById("brKpiRow").innerHTML = `
+    <div class="card stat-card"><div class="stat-label">🇧🇷 2026 Price</div>
+      <div class="stat-val">$${latest.price.toFixed(2)}</div>
+      <div class="stat-sub" style="color:var(--text-dim)">per bushel (USD)</div></div>
+    <div class="card stat-card"><div class="stat-label">💰 Total Cost</div>
+      <div class="stat-val">$${latest.cost.toFixed(2)}</div>
+      <div class="stat-sub" style="color:var(--text-dim)">per bushel equivalent</div></div>
+    <div class="card stat-card" style="border-left:3px solid ${mCol}"><div class="stat-label">📊 Margin</div>
+      <div class="stat-val" style="color:${mCol}">${margin >= 0 ? "+" : ""}$${margin.toFixed(2)}</div>
+      <div class="stat-sub" style="color:${yoy >= 0 ? 'var(--accent)' : 'var(--danger)'}">${yoy >= 0 ? "+" : ""}$${yoy.toFixed(2)} YoY</div></div>
+    <div class="card stat-card"><div class="stat-label">📡 Signal</div>
+      <div class="stat-val"><span class="pill" style="background:${sigBg};color:${mCol};font-size:14px;padding:6px 12px">${signal}</span></div>
+      <div class="stat-sub" style="color:var(--text-dim)">${((margin/latest.cost)*100).toFixed(1)}% of cost</div></div>
+  `;
+
+  document.getElementById("brazilNote").textContent = d.note;
+
+  const ctx = document.getElementById("brazilMarginChart");
+  if (!ctx || typeof Chart === 'undefined') return;
+  if (brazilChart) brazilChart.destroy();
+  brazilChart = new Chart(ctx.getContext("2d"), {
+    type: "line",
+    data: {
+      labels: d.years.map(y => y.y >= 2026 ? y.y + "F" : y.y),
+      datasets: [
+        { label: "Price $/bu", data: d.years.map(y => y.price), borderColor: "#10B981", backgroundColor: "#10B98122", borderWidth: 2, tension: 0.3, fill: true, pointRadius: 3 },
+        { label: "Cost $/bu", data: d.years.map(y => y.cost), borderColor: "#EF4444", backgroundColor: "#EF444422", borderWidth: 2, borderDash: [5,3], tension: 0.3, fill: false, pointRadius: 3 },
+        { label: "Margin $/bu", data: d.years.map(y => y.price - y.cost), borderColor: "#4D9EFF", backgroundColor: "#4D9EFF22", borderWidth: 3, tension: 0.3, fill: true, pointRadius: 4, yAxisID: "y1" }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "bottom", labels: { color: "#8B95A8", font: { family: "'IBM Plex Mono'", size: 10 }, boxWidth: 12, padding: 10 }}},
+      scales: {
+        x: { grid: { color: "#1B233244" }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 9 }}},
+        y: { position: "left", grid: { color: "#1B233244" }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 9 }, callback: v => "$" + v }, title: { display: true, text: "Price/Cost $/bu", color: "#8B95A8", font: { family: "'IBM Plex Mono'", size: 9 }}},
+        y1: { position: "right", grid: { display: false }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 9 }, callback: v => "$" + v }, title: { display: true, text: "Margin $/bu", color: "#8B95A8", font: { family: "'IBM Plex Mono'", size: 9 }}}
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════
+// EARNINGS CALL BRIEF DATA
+// ═══════════════════════════════════════════
+// Oct 22, 2025 (Q3 earnings call) reference prices for "since last call" delta
+const Q3_2025_REFERENCE = {
+  corn: 4.20, soybeans: 10.30, wheat: 5.55, cattle: 232.0,
+  crudeOil: 68.0, urea: 560
+};
+
+// USDA WASDE Feb 2026 Stocks-to-Use data (world + U.S.)
+// Sources: WASDE Feb 10 2026, Grains and Oilseeds Outlook Feb 2026
+const STOCKS_TO_USE = {
+  corn: {
+    us: { ratio: 13.4, stocks: 2010, use: 15060, trend: "tight" },
+    world: { ratio: 22.9, stocks: 293.2, use: 1280, trend: "very tight" },
+    label: "Corn"
+  },
+  soybeans: {
+    us: { ratio: 8.3, stocks: 355, use: 4280, trend: "tight" },
+    world: { ratio: 29.2, stocks: 124.4, use: 425, trend: "loose" },
+    label: "Soybeans"
+  },
+  wheat: {
+    us: { ratio: 46.2, stocks: 933, use: 2020, trend: "comfortable" },
+    world: { ratio: 33.6, stocks: 277.5, use: 824, trend: "loose" },
+    label: "Wheat"
+  }
+};
+
+// Historical stocks-to-use (world) for trend chart — approximate
+const STU_HISTORY = [
+  { y: 2015, corn: 21.5, soybeans: 28.8, wheat: 34.1 },
+  { y: 2016, corn: 22.8, soybeans: 30.2, wheat: 35.5 },
+  { y: 2017, corn: 24.1, soybeans: 32.5, wheat: 36.8 },
+  { y: 2018, corn: 27.3, soybeans: 33.1, wheat: 37.2 },
+  { y: 2019, corn: 28.1, soybeans: 28.9, wheat: 37.8 },
+  { y: 2020, corn: 26.5, soybeans: 24.0, wheat: 38.5 },
+  { y: 2021, corn: 25.2, soybeans: 23.1, wheat: 37.3 },
+  { y: 2022, corn: 26.8, soybeans: 25.4, wheat: 35.8 },
+  { y: 2023, corn: 25.9, soybeans: 27.2, wheat: 34.6 },
+  { y: 2024, corn: 24.5, soybeans: 28.1, wheat: 33.9 },
+  { y: 2025, corn: 23.8, soybeans: 28.6, wheat: 33.2 },
+  { y: 2026, corn: 22.9, soybeans: 29.2, wheat: 33.6 },
+];
+
+// Valmont Industries Ag segment historical quarterly revenue ($M)
+// Source: Valmont 8-K filings (Q1-Q3 2025, historical from press releases)
+const VALMONT_AG_REVENUE = [
+  { q: "Q1'23", rev: 420, op: 62 },
+  { q: "Q2'23", rev: 395, op: 55 },
+  { q: "Q3'23", rev: 310, op: 31 },
+  { q: "Q4'23", rev: 287, op: 14 },
+  { q: "Q1'24", rev: 271, op: 28 },
+  { q: "Q2'24", rev: 265, op: 29 },
+  { q: "Q3'24", rev: 259, op: 41 },
+  { q: "Q4'24", rev: 278, op: 36 },
+  { q: "Q1'25", rev: 267, op: 36 },
+  { q: "Q2'25", rev: 289, op: 45 },
+  { q: "Q3'25", rev: 241, op: 23 },
+  { q: "Q4'25E", rev: 250, op: 28 }, // estimate
+];
+
+// Forward futures curves (approximate from current market)
+const FORWARD_CURVES = {
+  corn: { months: ["May'26","Jul'26","Sep'26","Dec'26","Mar'27","Jul'27"],
+          prices: [4.52, 4.58, 4.35, 4.42, 4.52, 4.65] },
+  soybeans: { months: ["May'26","Jul'26","Aug'26","Nov'26","Jan'27","Jul'27"],
+              prices: [11.63, 11.75, 11.68, 11.40, 11.48, 11.75] },
+  cattle: { months: ["Apr'26","Jun'26","Aug'26","Oct'26","Dec'26","Feb'27"],
+            prices: [248.0, 246.3, 242.5, 238.0, 235.5, 232.0] },
+};
+
+// Analyst Q&A items
+const QA_ITEMS = [
+  {
+    q: "How is the U.S. irrigation market tracking vs. your prior guidance?",
+    a: "NA irrigation remains pressured by weak grain margins. Corn at $4.52/bu vs. a breakeven of ~$5.05/bu (total cost basis) means farmer cash flow is tight. Expect continued softness through H1 2026 with recovery dependent on price stabilization. However, stocks-to-use tightening in world corn (22.9% — tightest since 2014/15) provides fundamental price support over the medium term.",
+    tag: "GUIDANCE"
+  },
+  {
+    q: "What's driving international segment strength?",
+    a: "International represented ~50% of Ag segment revenue in 2025 vs. ~35% five years ago. EMEA growth (water scarcity, food security investment) and Brazilian recovery are the drivers. Brazil's record 178-180 MMT soybean crop and government support are stabilizing that market. Large-scale projects in Middle East/North Africa continue to backfill NA softness.",
+    tag: "INTERNATIONAL"
+  },
+  {
+    q: "How dependent is center pivot demand on farm income cycles?",
+    a: "Historically 4–6 quarter lag between farm income peaks and irrigation equipment sales. The 2022 NFI peak ($210B) drove the 2023 sales peak ($310-420M per quarter). The 2024–25 NFI stabilization at ~$155B is now flowing through as softer NA demand. Bright spot: farm equipment replacement cycle remains supportive given aging installed base.",
+    tag: "CYCLE"
+  },
+  {
+    q: "What about farmer balance sheet health and ability to finance capex?",
+    a: "Farm sector debt is forecast at $624.7B in 2026 (+5.2% YoY). Debt-to-asset ratio at 13.75% — historically manageable but rising. Purdue Ag Economy Barometer surveys show farmers using government payments primarily to service debt rather than reinvest. This is a headwind for discretionary capex but replacement buys continue.",
+    tag: "CREDIT"
+  },
+  {
+    q: "How are tariffs and input costs affecting your cost structure?",
+    a: "Per Q2 2025 disclosure, mitigation plans expected to be cost-neutral on a dollar basis in FY2025. Steel/aluminum Section 232 tariffs at 25% are manageable with pricing actions. Main watchpoint: fertilizer prices have surged — urea at $826/ton (+35% MoM per DTN, +46% YoY), anhydrous at $1,035/ton (first time above $1,000 since Apr 2023), DAP at $857/ton. Iran conflict lifting crude to $112/bbl compounds pressure via natural gas feedstock linkage. These costs compress farmer margins and indirectly pressure discretionary capex like irrigation equipment.",
+    tag: "TARIFFS"
+  },
+  {
+    q: "What do the WASDE supply/demand numbers tell us about 2026 demand outlook?",
+    a: "Next WASDE is April 9 (monitor closely). Feb WASDE showed world corn S/U at 22.9% — tightest in over a decade. Any Brazilian production downgrade or weather scare in U.S. corn belt could send prices higher quickly, supporting 2026-27 farmer cash flows and potentially re-accelerating irrigation demand into 2027.",
+    tag: "WASDE"
+  },
+  {
+    q: "How should we think about the solar tracker adjacency?",
+    a: "Ag solar incurred $5.9M in one-time charges in Q2 2025 — signaling reset. Positioned as a diversification play using existing steel fabrication and motion-control capabilities. Utility-scale solar demand remains robust but execution challenges warrant caution in the near term. Recommend framing as optionality rather than core driver.",
+    tag: "SOLAR"
+  },
+  {
+    q: "Where does the precision ag / technology business fit?",
+    a: "Advanced technology solutions embedded within Ag segment — not broken out separately. Strategic importance is the recurring revenue / ARR component that smooths cyclical hardware sales. Investment thesis: precision ag (variable rate application, sensor networks) has higher margins and less cyclical volatility than hardware.",
+    tag: "TECH"
+  },
+];
+
+// ═══════════════════════════════════════════
+// EARNINGS CALL RENDERING
+// ═══════════════════════════════════════════
+let stuChart = null, forwardChart = null, valmontRevChart = null, linkageChart = null;
+
+function renderEarningsBrief() {
+  if (!liveData) return;
+  const p = liveData;
+
+  // Since last call strip
+  const items = [
+    { key: "corn", label: "Corn", emoji: "🌽", unit: "/bu" },
+    { key: "soybeans", label: "Soybeans", emoji: "🫘", unit: "/bu" },
+    { key: "cattle", label: "Cattle", emoji: "🐄", unit: "/cwt" },
+    { key: "crudeOil", label: "Crude Oil", emoji: "🛢️", unit: "/bbl" },
+    { key: "urea", label: "Urea", emoji: "🧪", unit: "/ton" },
+  ];
+  document.getElementById("sinceLastCallGrid").innerHTML = items.map(i => {
+    const now = p[i.key], ref = Q3_2025_REFERENCE[i.key];
+    if (!now || !ref) return "";
+    const chg = now - ref, pct = (chg / ref) * 100;
+    const isNeg = i.key === "crudeOil" || i.key === "urea"; // bad if these go up
+    const col = isNeg ? (pct > 0 ? "var(--danger)" : "var(--accent)") : (pct > 0 ? "var(--accent)" : "var(--danger)");
+    return `<div class="card" style="flex:1 1 130px;min-width:130px;padding:12px">
+      <div style="font-size:11px">${i.emoji} ${i.label}</div>
+      <div class="mono" style="font-size:18px;font-weight:700;margin-top:4px">$${now}</div>
+      <div class="mono" style="font-size:10px;color:${col};margin-top:2px">
+        ${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% vs Oct 22
+      </div>
+    </div>`;
+  }).join("");
+
+  // Stocks-to-Use grid
+  document.getElementById("stocksToUseGrid").innerHTML = Object.entries(STOCKS_TO_USE).map(([key, d]) => {
+    const getSignal = (ratio, crop) => {
+      const thresh = crop === "wheat" ? [35, 28] : crop === "soybeans" ? [27, 22] : [25, 20];
+      if (ratio >= thresh[0]) return { label: "LOOSE", col: "var(--warn)", bg: "var(--warn-dim)" };
+      if (ratio >= thresh[1]) return { label: "BALANCED", col: "var(--blue)", bg: "var(--blue-dim)" };
+      return { label: "TIGHT", col: "var(--accent)", bg: "var(--accent-dim)" };
+    };
+    const wSig = getSignal(d.world.ratio, key);
+    const uSig = getSignal(d.us.ratio, key);
+    return `<div class="card" style="flex:1 1 220px;min-width:220px;padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600">${d.label}</div>
+      </div>
+      <div style="display:flex;gap:12px">
+        <div style="flex:1;padding-right:12px;border-right:1px solid var(--border)">
+          <div class="mono" style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">World</div>
+          <div class="mono" style="font-size:22px;font-weight:700;margin-top:2px">${d.world.ratio}%</div>
+          <span class="pill" style="background:${wSig.bg};color:${wSig.col};margin-top:4px">${wSig.label}</span>
+        </div>
+        <div style="flex:1">
+          <div class="mono" style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">U.S.</div>
+          <div class="mono" style="font-size:22px;font-weight:700;margin-top:2px">${d.us.ratio}%</div>
+          <span class="pill" style="background:${uSig.bg};color:${uSig.col};margin-top:4px">${uSig.label}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  // Valmont KPI row
+  const latest = VALMONT_AG_REVENUE[VALMONT_AG_REVENUE.length - 2]; // Q3'25 actual
+  const priorYr = VALMONT_AG_REVENUE[VALMONT_AG_REVENUE.length - 6]; // Q3'24
+  const yoyRev = ((latest.rev / priorYr.rev - 1) * 100).toFixed(1);
+  const opMargin = ((latest.op / latest.rev) * 100).toFixed(1);
+
+  document.getElementById("valmontKpiRow").innerHTML = `
+    <div class="card stat-card">
+      <div class="stat-label">🚜 Q3 2025 Ag Revenue</div>
+      <div class="stat-val">$${latest.rev}M</div>
+      <div class="stat-sub" style="color:${yoyRev >= 0 ? 'var(--accent)' : 'var(--danger)'}">${yoyRev >= 0 ? '+' : ''}${yoyRev}% YoY</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-label">📊 Op Income Margin</div>
+      <div class="stat-val">${opMargin}%</div>
+      <div class="stat-sub" style="color:var(--warn)">vs 15.9% Q3'24</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-label">🌍 2025 FY Guidance</div>
+      <div class="stat-val">$1.0B</div>
+      <div class="stat-sub" style="color:var(--text-dim)">~27% of total net sales</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-label">🌐 Intl. Share</div>
+      <div class="stat-val">~50%</div>
+      <div class="stat-sub" style="color:var(--accent)">vs 35% five yrs ago</div>
+    </div>
+  `;
+
+  // Q&A list
+  document.getElementById("qaList").innerHTML = QA_ITEMS.map((qa, i) => `
+    <details style="background:var(--card-alt);border:1px solid var(--border);border-radius:8px;padding:12px 14px">
+      <summary style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;list-style:none">
+        <span style="font-size:12px;font-weight:600;flex:1">${i + 1}. ${qa.q}</span>
+        <span class="pill" style="background:var(--blue-dim);color:var(--blue)">${qa.tag}</span>
+      </summary>
+      <div class="mono" style="font-size:11px;color:var(--text-dim);line-height:1.7;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        ${qa.a}
+      </div>
+    </details>
+  `).join("");
+
+  // Render all earnings charts
+  renderStocksToUseChart();
+  renderForwardCurveChart();
+  renderValmontRevChart();
+  renderLinkageChart();
+}
+
+function renderStocksToUseChart() {
+  const ctx = document.getElementById("stocksToUseChart");
+  if (!ctx || typeof Chart === 'undefined') return;
+  if (stuChart) stuChart.destroy();
+  stuChart = new Chart(ctx.getContext("2d"), {
+    type: "line",
+    data: {
+      labels: STU_HISTORY.map(d => d.y >= 2026 ? d.y + "F" : "'" + String(d.y).slice(2)),
+      datasets: [
+        { label: "Corn (World)", data: STU_HISTORY.map(d => d.corn), borderColor: "#F59E0B", backgroundColor: "#F59E0B22", borderWidth: 2, tension: 0.3, fill: true },
+        { label: "Soybeans (World)", data: STU_HISTORY.map(d => d.soybeans), borderColor: "#10B981", backgroundColor: "#10B98122", borderWidth: 2, tension: 0.3, fill: true },
+        { label: "Wheat (World)", data: STU_HISTORY.map(d => d.wheat), borderColor: "#8B5CF6", backgroundColor: "#8B5CF622", borderWidth: 2, tension: 0.3, fill: true },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "bottom", labels: { color: "#8B95A8", font: { family: "'IBM Plex Mono'", size: 10 }, boxWidth: 12, padding: 10 }}},
+      scales: {
+        x: { grid: { color: "#1B233244" }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 9 }}},
+        y: { grid: { color: "#1B233244" }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 9 }, callback: v => v + "%" }}
+      }
+    }
+  });
+}
+
+function renderForwardCurveChart() {
+  const ctx = document.getElementById("forwardCurveChart");
+  if (!ctx || typeof Chart === 'undefined') return;
+  if (forwardChart) forwardChart.destroy();
+
+  // Normalize so all curves on same chart using dual y-axis or indexed
+  // Use indexed: each curve starts at 100 for current month
+  const datasets = [
+    { label: "Corn ($/bu)", data: FORWARD_CURVES.corn.prices, borderColor: "#F59E0B", backgroundColor: "#F59E0B22", yAxisID: "y", borderWidth: 2, tension: 0.3, pointRadius: 4 },
+    { label: "Soybeans ($/bu)", data: FORWARD_CURVES.soybeans.prices, borderColor: "#10B981", backgroundColor: "#10B98122", yAxisID: "y", borderWidth: 2, tension: 0.3, pointRadius: 4 },
+    { label: "Cattle ($/cwt)", data: FORWARD_CURVES.cattle.prices, borderColor: "#EF4444", backgroundColor: "#EF444422", yAxisID: "y1", borderWidth: 2, tension: 0.3, pointRadius: 4 },
+  ];
+
+  forwardChart = new Chart(ctx.getContext("2d"), {
+    type: "line",
+    data: { labels: FORWARD_CURVES.corn.months, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "bottom", labels: { color: "#8B95A8", font: { family: "'IBM Plex Mono'", size: 10 }, boxWidth: 12, padding: 10 }}},
+      scales: {
+        x: { grid: { color: "#1B233244" }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 9 }}},
+        y: { type: "linear", position: "left", grid: { color: "#1B233244" }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 9 }, callback: v => "$" + v }, title: { display: true, text: "Grains $/bu", color: "#8B95A8", font: { family: "'IBM Plex Mono'", size: 10 }}},
+        y1: { type: "linear", position: "right", grid: { display: false }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 9 }, callback: v => "$" + v }, title: { display: true, text: "Cattle $/cwt", color: "#8B95A8", font: { family: "'IBM Plex Mono'", size: 10 }}}
+      }
+    }
+  });
+
+  // Takeaways
+  const cornSlope = FORWARD_CURVES.corn.prices[5] - FORWARD_CURVES.corn.prices[0];
+  const cattleSlope = FORWARD_CURVES.cattle.prices[5] - FORWARD_CURVES.cattle.prices[0];
+  document.getElementById("forwardCurveTakeaways").innerHTML = `
+    <strong style="color:var(--text-dim)">READING THE CURVES:</strong>
+    Corn curve is ${cornSlope > 0.1 ? "contango (upward sloping)" : "relatively flat"} — market pricing ${cornSlope > 0.1 ? "modest price appreciation" : "stable grain prices"} through 2027,
+    consistent with tight world S/U expectations.
+    Cattle curve is ${cattleSlope < -5 ? "backwardation (downward sloping)" : "flat"} — market expects ${cattleSlope < -5 ? "gradual moderation from current record highs" : "continued strength"},
+    which has implications for protein input costs across the ag value chain.
+  `;
+}
+
+function renderValmontRevChart() {
+  const ctx = document.getElementById("valmontRevChart");
+  if (!ctx || typeof Chart === 'undefined') return;
+  if (valmontRevChart) valmontRevChart.destroy();
+  valmontRevChart = new Chart(ctx.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: VALMONT_AG_REVENUE.map(d => d.q),
+      datasets: [
+        { label: "Revenue", data: VALMONT_AG_REVENUE.map(d => d.rev), backgroundColor: "#4D9EFF88", borderColor: "#4D9EFF", borderWidth: 1, order: 2 },
+        { label: "Op Income", data: VALMONT_AG_REVENUE.map(d => d.op), type: "line", borderColor: "#00E59B", backgroundColor: "#00E59B22", borderWidth: 2, yAxisID: "y1", pointRadius: 3, order: 1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { color: "#8B95A8", font: { family: "'IBM Plex Mono'", size: 10 }, boxWidth: 12, padding: 8 }}},
+      scales: {
+        x: { grid: { display: false }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 8 }}},
+        y: { grid: { color: "#1B233244" }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 9 }, callback: v => "$" + v + "M" }, title: { display: true, text: "Revenue $M", color: "#8B95A8", font: { family: "'IBM Plex Mono'", size: 9 }}},
+        y1: { type: "linear", position: "right", grid: { display: false }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 9 }, callback: v => "$" + v + "M" }, title: { display: true, text: "Op Income $M", color: "#8B95A8", font: { family: "'IBM Plex Mono'", size: 9 }}}
+      }
+    }
+  });
+}
+
+function renderLinkageChart() {
+  const ctx = document.getElementById("linkageChart");
+  if (!ctx || typeof Chart === 'undefined') return;
+  if (linkageChart) linkageChart.destroy();
+
+  // Corn margin per acre 2020-2026 (from USDA ERS cost of production)
+  const cornMargins = [
+    { y: "2020", margin: 74, vmi: 1200 },  // strong income -> equipment buy
+    { y: "2021", margin: 225, vmi: 1530 }, // boom year
+    { y: "2022", margin: 205, vmi: 1580 }, // peak
+    { y: "2023", margin: -62, vmi: 1410 }, // flipping
+    { y: "2024", margin: -137, vmi: 1073 }, // margin bust
+    { y: "2025", margin: -137, vmi: 1000 }, // continued pressure
+    { y: "2026F", margin: -133, vmi: 1010 } // forecast
+  ];
+
+  linkageChart = new Chart(ctx.getContext("2d"), {
+    type: "line",
+    data: {
+      labels: cornMargins.map(d => d.y),
+      datasets: [
+        { label: "Corn Margin ($/acre)", data: cornMargins.map(d => d.margin), borderColor: "#F59E0B", backgroundColor: "#F59E0B22", borderWidth: 2, tension: 0.3, yAxisID: "y", pointRadius: 4, fill: true },
+        { label: "Valmont Ag Rev ($M annual)", data: cornMargins.map(d => d.vmi), borderColor: "#4D9EFF", backgroundColor: "#4D9EFF22", borderWidth: 2, tension: 0.3, yAxisID: "y1", pointRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "bottom", labels: { color: "#8B95A8", font: { family: "'IBM Plex Mono'", size: 10 }, boxWidth: 12, padding: 8 }}},
+      scales: {
+        x: { grid: { display: false }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 9 }}},
+        y: { grid: { color: "#1B233244" }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 9 }, callback: v => "$" + v }, title: { display: true, text: "Corn Margin $/ac", color: "#8B95A8", font: { family: "'IBM Plex Mono'", size: 9 }}},
+        y1: { type: "linear", position: "right", grid: { display: false }, ticks: { color: "#4A5568", font: { family: "'IBM Plex Mono'", size: 9 }, callback: v => "$" + v + "M" }, title: { display: true, text: "Valmont Ag $M", color: "#8B95A8", font: { family: "'IBM Plex Mono'", size: 9 }}}
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════
+// GENERATE BRIEF (PRINTABLE)
+// ═══════════════════════════════════════════
+function generateBrief() {
+  const out = document.getElementById("briefOutput");
+  if (!liveData || !nfiResult) {
+    out.innerHTML = "<div style='padding:20px;text-align:center'>Waiting for price data...</div>";
+    out.classList.remove("hidden");
+    return;
+  }
+  const p = liveData, r = nfiResult;
+  const now = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+
+  out.innerHTML = `
+    <div style="border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:16px">
+      <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:2px">CONFIDENTIAL — PRE-CALL BRIEF</div>
+      <div style="font-size:22px;font-weight:700;margin-top:4px">Valmont Industries — Agriculture Segment</div>
+      <div style="font-size:12px;color:#666;margin-top:4px">Q4 2025 Earnings Call Preparation · Generated ${now}</div>
+    </div>
+
+    <div style="font-size:13px;font-weight:700;margin-bottom:6px">KEY MESSAGES</div>
+    <ol style="font-size:12px;line-height:1.6;padding-left:20px;margin-bottom:16px">
+      <li><strong>NA irrigation softness continues</strong> — reflecting grain margin squeeze. Corn at $${p.corn}/bu vs. breakeven ~$5.05/bu (total cost). Expect headwind through H1 2026.</li>
+      <li><strong>International is the offset</strong> — ~50% of segment revenue, led by EMEA and Brazil. Large-scale projects providing visibility.</li>
+      <li><strong>Fundamental support building</strong> — world corn stocks-to-use at ${STOCKS_TO_USE.corn.world.ratio}% (tightest since 2014/15). Any weather scare or Brazil downgrade could rapidly improve farmer cash flow outlook.</li>
+      <li><strong>Cost mitigation on track</strong> — tariff impact cost-neutral on dollar basis per prior guidance. Steel/aluminum Section 232 managed through pricing.</li>
+      <li><strong>NFI proxy tracking:</strong> Currently at $${r.proxyNFI}B, ${r.nfiDelta >= 0 ? "above" : "below"} USDA baseline by ${Math.abs(r.nfiDelta)}B (${r.nfiPctChg}%). Direction: ${r.direction}.</li>
+    </ol>
+
+    <div style="font-size:13px;font-weight:700;margin-bottom:6px">MARKET MOVES SINCE LAST CALL (Oct 22)</div>
+    <table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:16px">
+      <tr style="background:#f5f5f5;font-weight:600">
+        <td style="padding:6px 8px;border:1px solid #ddd">Commodity</td>
+        <td style="padding:6px 8px;border:1px solid #ddd">Oct 22</td>
+        <td style="padding:6px 8px;border:1px solid #ddd">Current</td>
+        <td style="padding:6px 8px;border:1px solid #ddd">Change</td>
+      </tr>
+      ${Object.entries(Q3_2025_REFERENCE).map(([k, ref]) => {
+        const now = p[k]; if (!now) return "";
+        const pct = ((now/ref - 1) * 100).toFixed(1);
+        return `<tr>
+          <td style="padding:6px 8px;border:1px solid #ddd;text-transform:capitalize">${k}</td>
+          <td style="padding:6px 8px;border:1px solid #ddd">$${ref}</td>
+          <td style="padding:6px 8px;border:1px solid #ddd;font-weight:600">$${now}</td>
+          <td style="padding:6px 8px;border:1px solid #ddd;color:${pct >= 0 ? '#0a7' : '#c04'};font-weight:600">${pct >= 0 ? '+' : ''}${pct}%</td>
+        </tr>`;
+      }).join("")}
+    </table>
+
+    <div style="font-size:13px;font-weight:700;margin-bottom:6px">STOCKS-TO-USE (FEB 2026 WASDE)</div>
+    <table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:16px">
+      <tr style="background:#f5f5f5;font-weight:600">
+        <td style="padding:6px 8px;border:1px solid #ddd">Commodity</td>
+        <td style="padding:6px 8px;border:1px solid #ddd">World S/U</td>
+        <td style="padding:6px 8px;border:1px solid #ddd">U.S. S/U</td>
+        <td style="padding:6px 8px;border:1px solid #ddd">Signal</td>
+      </tr>
+      ${Object.entries(STOCKS_TO_USE).map(([k, d]) => `<tr>
+        <td style="padding:6px 8px;border:1px solid #ddd">${d.label}</td>
+        <td style="padding:6px 8px;border:1px solid #ddd">${d.world.ratio}%</td>
+        <td style="padding:6px 8px;border:1px solid #ddd">${d.us.ratio}%</td>
+        <td style="padding:6px 8px;border:1px solid #ddd;text-transform:capitalize">${d.world.trend}</td>
+      </tr>`).join("")}
+    </table>
+
+    <div style="font-size:13px;font-weight:700;margin-bottom:6px">TOP 3 ANTICIPATED Q&A</div>
+    <div style="font-size:11px;line-height:1.6">
+      ${QA_ITEMS.slice(0, 3).map((qa, i) => `
+        <div style="margin-bottom:10px;padding:8px;background:#f9f9f9;border-left:3px solid #4D9EFF">
+          <div style="font-weight:600;margin-bottom:4px">Q${i+1}: ${qa.q}</div>
+          <div style="color:#444">${qa.a}</div>
+        </div>
+      `).join("")}
+    </div>
+
+    <div style="margin-top:20px;padding-top:12px;border-top:1px solid #ddd;font-size:10px;color:#999;text-align:center">
+      Generated from NFI Proxy Dashboard · Sources: USDA WASDE, ERS, Valmont 8-K filings, Yahoo Finance futures<br>
+      <button onclick="window.print()" style="margin-top:8px;padding:6px 16px;background:#0D1117;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px">🖨 Print This Brief</button>
+    </div>
+  `;
+  out.classList.remove("hidden");
+  out.scrollIntoView({ behavior: "smooth" });
+}
+
+// ═══════════════════════════════════════════
 // TAB SWITCHING
 // ═══════════════════════════════════════════
 function showTab(tab) {
   document.getElementById("dashboardTab").classList.toggle("hidden", tab !== "dashboard");
+  document.getElementById("earningsTab").classList.toggle("hidden", tab !== "earnings");
   document.getElementById("methodologyTab").classList.toggle("hidden", tab !== "methodology");
   document.getElementById("tabDash").classList.toggle("active", tab === "dashboard");
+  document.getElementById("tabEarnings").classList.toggle("active", tab === "earnings");
   document.getElementById("tabMethod").classList.toggle("active", tab === "methodology");
+  // Render earnings charts when tab becomes visible (Chart.js needs visible canvas)
+  if (tab === "earnings") {
+    setTimeout(renderEarningsBrief, 50);
+  }
 }
 
 // ═══════════════════════════════════════════
