@@ -1,13 +1,13 @@
 {
-  "corn": 5.37,
-  "soybeans": 12.65,
-  "wheat": 7.61,
-  "cattle": 210.65,
-  "hogs": 80.8,
-  "dairy": 16.85,
-  "crudeOil": 81.54,
+  "corn": 5.35,
+  "soybeans": 12.73,
+  "wheat": 7.62,
+  "cattle": 212.9,
+  "hogs": 80.53,
+  "dairy": 16.38,
+  "crudeOil": 83.17,
   "urea": 826,
-  "asOf": "Aug 27, 2026 02:59 UTC",
-  "fetchedAt": "2026-08-27T02:59:38.090837+00:00",
+  "asOf": "Aug 28, 2026 05:59 UTC",
+  "fetchedAt": "2026-08-28T05:59:52.317478+00:00",
   "notes": "Auto-updated via GitHub Actions using Yahoo Finance futures data. Urea fertilizer price is a static estimate (no free API available)."
 }
